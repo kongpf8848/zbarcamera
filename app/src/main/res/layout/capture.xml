@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" 
+    android:layout_width="fill_parent" 
+    android:layout_height="fill_parent"
+>
+ <SurfaceView 
+     android:id="@+id/preview_view" 
+     android:layout_width="fill_parent" 
+     android:layout_height="fill_parent" 
+     android:layout_gravity="center" 
+  />
+ <RelativeLayout 
+     android:layout_width="fill_parent" 
+     android:layout_height="fill_parent"
+  >
+     
+       <com.zbar.view.ViewfinderView 
+           android:id="@+id/viewfinder_view" 
+           android:background="@color/transparent" 
+           android:layout_width="fill_parent" 
+           android:layout_height="fill_parent" 
+       />
+       
+      <RelativeLayout 
+         android:id="@+id/rl_title"
+         android:layout_width="fill_parent" 
+         android:layout_height="50.0dip"
+         android:layout_alignParentTop="true"
+         android:background="#ff00a0ff" 
+      >
+    
+       <ImageView 
+          android:id="@+id/iv_title_back" 
+          android:layout_width="wrap_content" 
+          android:layout_height="fill_parent" 
+          android:layout_centerVertical="true" 
+          android:paddingLeft="20.0dip" 
+          android:paddingRight="20.0dip" 
+          android:src="@drawable/icon_back" 
+          android:background="@drawable/selector_icon_back" 
+          android:contentDescription="@null"
+        />
+	   <TextView 
+	     android:id="@+id/tv_title_text" 
+	     android:layout_width="wrap_content" 
+	     android:layout_height="fill_parent" 
+	     android:layout_centerInParent="true"
+	     android:gravity="center"
+	     android:text="@string/scan"
+	     android:textSize="20.0sp" 
+	     android:textColor="@color/white" 
+	     android:singleLine="true"
+	   />
+     </RelativeLayout>
+       
+      <RelativeLayout 
+          android:layout_width="fill_parent" 
+          android:layout_height="wrap_content" 
+          android:layout_alignParentBottom="true"
+        >
+         
+         <ImageView 
+            android:id="@+id/iv_flashlight" 
+            android:layout_width="wrap_content" 
+            android:layout_height="wrap_content" 
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="20dp"
+            android:src="@drawable/icon_light" 
+            android:contentDescription="@null"
+        />
+         
+      
+      </RelativeLayout>
+       
+        
+     
+        
+  </RelativeLayout>
+  
+</FrameLayout>

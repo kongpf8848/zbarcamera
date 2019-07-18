@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">zbar扫码</string>
+    <string name="action_settings">Settings</string>
+    <string name="scan">扫一扫</string>
+    <string name="torch_on">打开闪光灯</string>
+    <string name="torch_off">关闭闪光灯</string>
+    <string name="tip_input">请输入或扫描条码</string>
+    <string name="tip_scan">请将条码放到取景框中,即可自动扫描</string>
+
+    <string name="confirm">确定</string>
+    <string name="cancel">取消</string>
+</resources>
