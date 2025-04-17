@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion rootProject.ext.android.compileSdkVersion
-    buildToolsVersion rootProject.ext.android.buildToolsVersion
+    namespace "com.zbar.camera"
+    compileSdk rootProject.ext.android.compileSdkVersion
 
     defaultConfig {
         applicationId "com.zbar.camera"
-        minSdkVersion rootProject.ext.android.minSdkVersion
-        targetSdkVersion rootProject.ext.android.targetSdkVersion
+        minSdk rootProject.ext.android.minSdkVersion
+        targetSdk rootProject.ext.android.targetSdkVersion
         versionCode 2
         versionName "1.0.1"
         ndk {
@@ -24,10 +24,6 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    testImplementation rootProject.ext.dependencies["junit"]
-    implementation rootProject.ext.dependencies["appcompat-v7"]
-    implementation rootProject.ext.dependencies["butterknife"]
-    annotationProcessor rootProject.ext.dependencies["butterknife-compiler"]
-    implementation 'com.github.kongpf8848:permissionhelper:1.0.0'
-    implementation 'com.kongpf.commonhelper:common-helper:1.0.9'
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'io.github.kongpf8848:common-helper:1.0.21'
 }

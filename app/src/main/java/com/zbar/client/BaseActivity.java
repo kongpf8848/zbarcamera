@@ -2,9 +2,10 @@ package com.zbar.client;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 
-import butterknife.ButterKnife;
+
+import androidx.appcompat.app.AppCompatActivity;
+
 
 /**
  * Created by pengf on 2017/3/29.
@@ -18,17 +19,11 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        initBefore();
         setContentView(getLayoutId());
 
-        ButterKnife.bind(this);
         initData();
     }
 
-
-    protected void initBefore() {
-
-    }
 
     protected void initData() {
 
