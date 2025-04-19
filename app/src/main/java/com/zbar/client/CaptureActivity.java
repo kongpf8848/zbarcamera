@@ -119,12 +119,12 @@ public class CaptureActivity extends Activity implements SurfaceHolder.Callback,
 
     public void light() {
         if (this.flag) {
-            //CameraManager.get().openLight();
+            cameraUtil.enableFlashlight();
             this.flag = false;
             this.iv_flashlight.setImageDrawable(getResources().getDrawable(R.drawable.icon_light_hover));
             return;
         }
-        //CameraManager.get().offLight();
+        cameraUtil.disableFlashlight();
         this.flag = true;
         this.iv_flashlight.setImageDrawable(getResources().getDrawable(R.drawable.icon_light));
     }

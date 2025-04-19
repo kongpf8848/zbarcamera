@@ -37,6 +37,7 @@ public final class CameraUtil {
     private ImageReader imageReader;
     private Context context;
     private OnFrameCallback onFrameCallback;
+    private SurfaceHolder surfaceHolder;
 
 
     public interface OnFrameCallback {
@@ -75,6 +76,7 @@ public final class CameraUtil {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
+        this.surfaceHolder = holder;
         cameraManager.openCamera(CAMERA_ID, new CameraDevice.StateCallback() {
             @Override
             public void onOpened(@NonNull CameraDevice camera) {
@@ -112,7 +114,7 @@ public final class CameraUtil {
                 cameraCaptureSession = session;
                 try {
                     CaptureRequest.Builder requestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                    requestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                    requestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
                     requestBuilder.addTarget(holder.getSurface());
                     requestBuilder.addTarget(imageReader.getSurface());
                     session.setRepeatingRequest(requestBuilder.build(), null, cameraHandler);
@@ -139,6 +141,36 @@ public final class CameraUtil {
         if (cameraDevice != null) {
             cameraDevice.close();
             cameraDevice = null;
+        }
+    }
+
+    public void enableFlashlight() {
+        if (cameraDevice == null) {
+            return;
+        }
+        try {
+            CaptureRequest.Builder requestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            requestBuilder.addTarget(surfaceHolder.getSurface());
+            requestBuilder.addTarget(imageReader.getSurface());
+            requestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);
+            cameraCaptureSession.setRepeatingRequest(requestBuilder.build(), null, cameraHandler);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void disableFlashlight() {
+        if (cameraDevice == null) {
+            return;
+        }
+        try {
+            CaptureRequest.Builder requestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            requestBuilder.addTarget(surfaceHolder.getSurface());
+            requestBuilder.addTarget(imageReader.getSurface());
+            requestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF);
+            cameraCaptureSession.setRepeatingRequest(requestBuilder.build(), null, cameraHandler);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
         }
     }
 
