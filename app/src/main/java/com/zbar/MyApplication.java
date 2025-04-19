@@ -1,4 +1,4 @@
-package com.zbar.client;
+package com.zbar;
 
 import android.app.Application;
 
@@ -6,6 +6,5 @@ public class MyApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
     }
 }

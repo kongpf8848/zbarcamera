@@ -1,6 +1,6 @@
 
 
-package com.zbar.decode;
+package com.zbar.util;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
