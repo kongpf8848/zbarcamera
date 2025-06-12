@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
+import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
@@ -107,6 +108,7 @@ public final class CameraUtil {
         List<Surface> outputSurfaces = new ArrayList<>();
         outputSurfaces.add(holder.getSurface());
         outputSurfaces.add(imageReader.getSurface());
+     
 
         cameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
             @Override
@@ -117,7 +119,7 @@ public final class CameraUtil {
                     requestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
                     requestBuilder.addTarget(holder.getSurface());
                     requestBuilder.addTarget(imageReader.getSurface());
-                    session.setRepeatingRequest(requestBuilder.build(), null, cameraHandler);
+                    session.capture(requestBuilder.build(), null, cameraHandler);
                 } catch (CameraAccessException e) {
                     Log.d("", "CameraAccessException:" + e);
                 }
