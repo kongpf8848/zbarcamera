@@ -31,9 +31,10 @@ import java.util.List;
 public final class CameraUtil {
 
     private static final String TAG = "CameraUtil";
-    private final String CAMERA_ID = "" + CameraCharacteristics.LENS_FACING_FRONT;
+
     private static final int PREVIEW_WIDTH = 1080;
     private static final int PREVIEW_HEIGHT = 1920;
+    private String cameraId = "0";
     private CameraManager cameraManager;
     private CameraDevice cameraDevice;
     private CameraCaptureSession cameraCaptureSession;
@@ -75,6 +76,23 @@ public final class CameraUtil {
             }
 
         }, cameraHandler);
+        cameraId = getCameraIdByFace(cameraManager, CameraCharacteristics.LENS_FACING_BACK);
+        Log.d(TAG, "CameraUtil() called with: cameraId = [" + cameraId + "]");
+    }
+
+    public String getCameraIdByFace(CameraManager cameraManager, int face) {
+        try {
+            String[] cameraIdList = cameraManager.getCameraIdList(); // may be empty
+            for (String cameraId : cameraIdList) {
+                CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+                Integer lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                if (lensFacing != null && lensFacing == face) {
+                    return cameraId;
+                }
+            }
+        } catch (CameraAccessException e) {
+        }
+        return "0";
     }
 
     public void openCamera(SurfaceHolder holder) throws Exception {
@@ -82,7 +100,7 @@ public final class CameraUtil {
             return;
         }
         this.surfaceHolder = holder;
-        cameraManager.openCamera(CAMERA_ID, new CameraDevice.StateCallback() {
+        cameraManager.openCamera(cameraId, new CameraDevice.StateCallback() {
             @Override
             public void onOpened(@NonNull CameraDevice camera) {
                 cameraDevice = camera;
@@ -114,7 +132,6 @@ public final class CameraUtil {
         List<Surface> outputSurfaces = new ArrayList<>();
         outputSurfaces.add(this.surfaceHolder.getSurface());
         outputSurfaces.add(imageReader.getSurface());
-
 
         cameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
             @Override
