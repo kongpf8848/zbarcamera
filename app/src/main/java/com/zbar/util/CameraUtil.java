@@ -1,9 +1,13 @@
 package com.zbar.util;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
+import android.graphics.Point;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -13,11 +17,15 @@ import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
+import android.util.Size;
+import android.view.Display;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.widget.Toast;
@@ -26,7 +34,29 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+
+
+class SmartSize {
+    Size size;
+    double longSize;
+    double shortSize;
+
+    public SmartSize(Integer width, Integer height) {
+        size = new Size(width, height);
+        longSize = max(size.getWidth(), size.getHeight());
+        shortSize = min(size.getWidth(), size.getHeight());
+    }
+
+    @Override
+    public String toString() {
+        return String.format("SmartSize(%sx%s)", longSize, shortSize);
+    }
+}
+
 
 public final class CameraUtil {
 
@@ -49,16 +79,68 @@ public final class CameraUtil {
         void onFrame(int width, int height, byte[] data);
     }
 
+    SmartSize SIZE_1080P = new SmartSize(1920, 1080);
+
+    /**
+     * Returns a [SmartSize] object for the given [Display]
+     */
+    SmartSize getDisplaySmartSize(Display display) {
+        Point outPoint = new Point();
+        display.getRealSize(outPoint);
+        return new SmartSize(outPoint.x, outPoint.y);
+    }
+
+
+    Size getPreviewOutputSize(Display display, CameraCharacteristics characteristics, Integer format) {
+
+        // Find which is smaller: screen or 1080p
+        SmartSize screenSize = getDisplaySmartSize(display);
+        boolean hdScreen = screenSize.longSize >= SIZE_1080P.longSize || screenSize.shortSize >= SIZE_1080P.shortSize;
+        SmartSize maxSize;
+        if (hdScreen) {
+            maxSize = SIZE_1080P;
+        } else {
+            maxSize = screenSize;
+        }
+
+        StreamConfigurationMap config = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+        Size[] allSizes = config.getOutputSizes(format);
+
+        // Get available sizes and sort them by area from largest to smallest
+        List<Size> sortedSizes = Arrays.asList(allSizes);
+        List<SmartSize> validSizes = sortedSizes.stream().sorted(Comparator.comparing(s -> s.getHeight() * s.getWidth())).map(s -> new SmartSize(s.getWidth(), s.getHeight())).sorted(new Comparator<SmartSize>() {
+            @Override
+            public int compare(SmartSize o1, SmartSize o2) {
+                return o2.size.getWidth() * o2.size.getHeight() - o1.size.getWidth() * o1.size.getHeight();
+            }
+        }).collect(Collectors.toList());
+
+        // Then, get the largest output size that is smaller or equal than our max size
+        return validSizes.stream().filter(s -> s.longSize <= maxSize.longSize && s.shortSize <= maxSize.shortSize).findFirst().get().size;
+    }
 
     public CameraUtil(Context context, OnFrameCallback onFrameCallback) {
-
         this.context = context;
         this.onFrameCallback = onFrameCallback;
         cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
         HandlerThread handlerThread = new HandlerThread("preview_thread");
         handlerThread.start();
         cameraHandler = new Handler(handlerThread.getLooper());
-        imageReader = ImageReader.newInstance(PREVIEW_WIDTH, PREVIEW_HEIGHT, ImageFormat.YUV_420_888, 2);
+        cameraId = getCameraIdByFace(cameraManager, CameraCharacteristics.LENS_FACING_BACK);
+
+        Size previewSize = new Size(0, 0);
+        try {
+            CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                previewSize = getPreviewOutputSize(context.getDisplay(), characteristics, ImageFormat.YUV_420_888);
+            }
+            Log.d(TAG, "CameraUtil() called with: previewSize = [" + previewSize + "]");
+        } catch (CameraAccessException e) {
+            throw new RuntimeException(e);
+        }
+
+
+        imageReader = ImageReader.newInstance(previewSize.getWidth(), previewSize.getHeight(), ImageFormat.YUV_420_888, 2);
         imageReader.setOnImageAvailableListener(reader -> {
             try (Image image = reader.acquireLatestImage()) {
                 if (image != null) {
@@ -76,7 +158,7 @@ public final class CameraUtil {
             }
 
         }, cameraHandler);
-        cameraId = getCameraIdByFace(cameraManager, CameraCharacteristics.LENS_FACING_BACK);
+
         Log.d(TAG, "CameraUtil() called with: cameraId = [" + cameraId + "]");
     }
 
