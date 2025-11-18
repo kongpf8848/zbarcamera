@@ -3,10 +3,8 @@ package com.zbar.client;
 import android.Manifest;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
-
 
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
@@ -48,7 +46,6 @@ public class MainActivity extends BaseActivity {
         et_mailno_search.setText("");
         Intent intent = new Intent(MainActivity.this, CaptureActivity.class);
         startActivityForResult(intent, 1);
-
     }
 
 

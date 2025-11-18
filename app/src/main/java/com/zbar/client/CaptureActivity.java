@@ -10,7 +10,6 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
 import android.os.Vibrator;
@@ -21,8 +20,8 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
-import com.zbar.util.CameraUtil;
 import com.zbar.camera.R;
+import com.zbar.util.CameraUtil;
 import com.zbar.util.DecodeHandler;
 import com.zbar.util.InactivityTimer;
 import com.zbar.view.ViewfinderView;
@@ -40,7 +39,7 @@ public class CaptureActivity extends Activity implements SurfaceHolder.Callback,
     private ImageView iv_title_back;
     private ImageView iv_flashlight;
     private ScreenOffReceiver mScreenOffReceiver = new ScreenOffReceiver();
-    ;
+    private SurfaceView surfaceView;
 
     private CameraUtil cameraUtil;
 
@@ -80,6 +79,7 @@ public class CaptureActivity extends Activity implements SurfaceHolder.Callback,
             cameraUtil.openCamera(surfaceHolder);
         } catch (Exception e) {
             e.printStackTrace();
+            Log.d(TAG, "initCamera() error with: exception = [" + e + "]");
         }
     }
 
@@ -105,7 +105,7 @@ public class CaptureActivity extends Activity implements SurfaceHolder.Callback,
     }
 
     public void handleDecode(String result) {
-        if(result==null || result.isEmpty()){
+        if (result == null || result.isEmpty()) {
             return;
         }
         inactivityTimer.onActivity();
@@ -139,6 +139,7 @@ public class CaptureActivity extends Activity implements SurfaceHolder.Callback,
         this.iv_flashlight.setOnClickListener(this);
         this.iv_title_back = (ImageView) findViewById(R.id.iv_title_back);
         this.iv_title_back.setOnClickListener(this);
+        this.surfaceView = (SurfaceView) findViewById(R.id.preview_view);
 
         this.hasSurface = false;
         this.inactivityTimer = new InactivityTimer(this);
@@ -148,13 +149,14 @@ public class CaptureActivity extends Activity implements SurfaceHolder.Callback,
         registerReceiver(this.mScreenOffReceiver, intentFilter);
         HandlerThread handlerThread = new HandlerThread("decode_thread");
         handlerThread.start();
-        decodeHandler = new DecodeHandler(handlerThread.getLooper(), this::handleDecode,this.viewfinderView);
+        decodeHandler = new DecodeHandler(handlerThread.getLooper(), this::handleDecode, this.viewfinderView);
 
         cameraUtil = new CameraUtil(this, (width, height, data) -> {
             Log.d("CaptureActivity", "onFrame() called with: width = [" + width + "], height = [" + height + "], data = [" + data.length + "]");
             Message message = decodeHandler.obtainMessage(R.id.decode, width, height, data);
             message.sendToTarget();
         });
+
     }
 
     @Override
@@ -163,7 +165,6 @@ public class CaptureActivity extends Activity implements SurfaceHolder.Callback,
         inactivityTimer.onPause();
         cameraUtil.pause();
         if (!hasSurface) {
-            SurfaceView surfaceView = (SurfaceView) findViewById(R.id.preview_view);
             SurfaceHolder surfaceHolder = surfaceView.getHolder();
             surfaceHolder.removeCallback(this);
         }
@@ -174,9 +175,8 @@ public class CaptureActivity extends Activity implements SurfaceHolder.Callback,
     @Override
     protected void onResume() {
         super.onResume();
-
-        SurfaceView surfaceView = (SurfaceView) findViewById(R.id.preview_view);
         SurfaceHolder surfaceHolder = surfaceView.getHolder();
+        Log.d(TAG, "onResume() called,surfaceHolder:" + surfaceHolder + ",hasSurface:" + hasSurface);
         if (hasSurface) {
             initCamera(surfaceHolder);
         } else {
@@ -210,6 +210,8 @@ public class CaptureActivity extends Activity implements SurfaceHolder.Callback,
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
+        Log.d(TAG, "surfaceCreated() called with: holder = [" + holder + "]");
+        Log.d(TAG, "surfaceCreated() called with: surface = [" + holder.getSurface().isValid() + "]");
         if (!hasSurface) {
             hasSurface = true;
             initCamera(holder);
@@ -219,7 +221,9 @@ public class CaptureActivity extends Activity implements SurfaceHolder.Callback,
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
+        Log.d(TAG, "surfaceDestroyed() called with: holder = [" + holder + "]");
         hasSurface = false;
+        cameraUtil.destroy();
     }
 
     @Override

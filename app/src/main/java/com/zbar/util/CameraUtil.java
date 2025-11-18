@@ -4,12 +4,14 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
-import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.CaptureResult;
+import android.hardware.camera2.TotalCaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Handler;
@@ -27,7 +29,7 @@ import java.util.List;
 
 public final class CameraUtil {
 
-    private static final String TAG = "CameraUnit";
+    private static final String TAG = "CameraUtil";
     private final String CAMERA_ID = "0";
     private static final int PREVIEW_WIDTH = 1080;
     private static final int PREVIEW_HEIGHT = 1920;
@@ -57,17 +59,18 @@ public final class CameraUtil {
         imageReader = ImageReader.newInstance(PREVIEW_WIDTH, PREVIEW_HEIGHT, ImageFormat.YUV_420_888, 2);
         imageReader.setOnImageAvailableListener(reader -> {
             try (Image image = reader.acquireLatestImage()) {
-                int imageWidth = image.getWidth();
-                int imageHeight = image.getHeight();
-                Log.d(TAG, "imageWidth:" + imageWidth + ";imageHeight:" + imageHeight);
-
-                byte[] data = ImageUtil.getBytesFromImageAsType(image, 2);
-
-                if (onFrameCallback != null) {
-                    onFrameCallback.onFrame(imageWidth, imageHeight, data);
+                if (image != null) {
+                    int imageWidth = image.getWidth();
+                    int imageHeight = image.getHeight();
+                    byte[] data = ImageUtil.getBytesFromImageAsType(image, 2);
+                    Log.d(TAG, "imageWidth:" + imageWidth + ";imageHeight:" + imageHeight + "," + data.length);
+                    if (onFrameCallback != null) {
+                        onFrameCallback.onFrame(imageWidth, imageHeight, data);
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                Log.e(TAG, "CameraUtil() called with: context = [" + context + "], onFrameCallback = [" + onFrameCallback + "]");
             }
 
         }, cameraHandler);
@@ -82,10 +85,12 @@ public final class CameraUtil {
             @Override
             public void onOpened(@NonNull CameraDevice camera) {
                 cameraDevice = camera;
+                Log.d(TAG, "onOpened() called with: camera = [" + camera + "]");
+                Log.d(TAG, "startPreview");
                 try {
-                    startPreview(holder);
+                    startPreview();
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    Toast.makeText(context, "startPreview Failed:" + e, Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -103,25 +108,75 @@ public final class CameraUtil {
     }
 
 
-    private void startPreview(SurfaceHolder holder) throws Exception {
-
+    private void startPreview() throws Exception {
+        Log.d(TAG, "startPreview() called with: holder = [" + this.surfaceHolder + "]");
         List<Surface> outputSurfaces = new ArrayList<>();
-        outputSurfaces.add(holder.getSurface());
+        outputSurfaces.add(this.surfaceHolder.getSurface());
         outputSurfaces.add(imageReader.getSurface());
-     
+
 
         cameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
             @Override
             public void onConfigured(@NonNull CameraCaptureSession session) {
                 cameraCaptureSession = session;
                 try {
-                    CaptureRequest.Builder requestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                    requestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
-                    requestBuilder.addTarget(holder.getSurface());
-                    requestBuilder.addTarget(imageReader.getSurface());
-                    session.capture(requestBuilder.build(), null, cameraHandler);
+                    CaptureRequest.Builder previewRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                    previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+
+                    previewRequestBuilder.addTarget(surfaceHolder.getSurface());
+                    previewRequestBuilder.addTarget(imageReader.getSurface());
+                    session.setRepeatingRequest(previewRequestBuilder.build(), new CameraCaptureSession.CaptureCallback() {
+                        @Override
+                        public void onReadoutStarted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, long timestamp, long frameNumber) {
+                            super.onReadoutStarted(session, request, timestamp, frameNumber);
+                            Log.d(TAG, "onReadoutStarted() called with: session = [" + session + "], request = [" + request + "], timestamp = [" + timestamp + "], frameNumber = [" + frameNumber + "]");
+                        }
+
+                        @Override
+                        public void onCaptureStarted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, long timestamp, long frameNumber) {
+                            super.onCaptureStarted(session, request, timestamp, frameNumber);
+                            Log.d(TAG, "onCaptureStarted() called with: session = [" + session + "], request = [" + request + "], timestamp = [" + timestamp + "], frameNumber = [" + frameNumber + "]");
+                        }
+
+                        @Override
+                        public void onCaptureProgressed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull CaptureResult partialResult) {
+                            super.onCaptureProgressed(session, request, partialResult);
+                            Log.d(TAG, "onCaptureProgressed() called with: session = [" + session + "], request = [" + request + "], partialResult = [" + partialResult + "]");
+                        }
+
+                        @Override
+                        public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
+                            super.onCaptureCompleted(session, request, result);
+                            Log.d(TAG, "onCaptureCompleted() called with: session = [" + session + "], request = [" + request + "], result = [" + result + "]");
+                        }
+
+                        @Override
+                        public void onCaptureFailed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull CaptureFailure failure) {
+                            super.onCaptureFailed(session, request, failure);
+                            Log.d(TAG, "onCaptureFailed() called with: session = [" + session + "], request = [" + request + "], failure = [" + failure + "]");
+                        }
+
+                        @Override
+                        public void onCaptureSequenceCompleted(@NonNull CameraCaptureSession session, int sequenceId, long frameNumber) {
+                            super.onCaptureSequenceCompleted(session, sequenceId, frameNumber);
+                            Log.d(TAG, "onCaptureSequenceCompleted() called with: session = [" + session + "], sequenceId = [" + sequenceId + "], frameNumber = [" + frameNumber + "]");
+                        }
+
+                        @Override
+                        public void onCaptureSequenceAborted(@NonNull CameraCaptureSession session, int sequenceId) {
+                            super.onCaptureSequenceAborted(session, sequenceId);
+                            Log.d(TAG, "onCaptureSequenceAborted() called with: session = [" + session + "], sequenceId = [" + sequenceId + "]");
+                        }
+
+                        @Override
+                        public void onCaptureBufferLost(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull Surface target, long frameNumber) {
+                            super.onCaptureBufferLost(session, request, target, frameNumber);
+                            Log.d(TAG, "onCaptureBufferLost() called with: session = [" + session + "], request = [" + request + "], target = [" + target + "], frameNumber = [" + frameNumber + "]");
+                        }
+                    }, cameraHandler);
                 } catch (CameraAccessException e) {
-                    Log.d("", "CameraAccessException:" + e);
+                    Log.d(TAG, "CameraAccessException:" + e);
                 }
             }
 
@@ -139,11 +194,8 @@ public final class CameraUtil {
         }
     }
 
-    public void resume() {
-        if (cameraDevice != null) {
-            cameraDevice.close();
-            cameraDevice = null;
-        }
+    public void destroy() {
+        this.surfaceHolder = null;
     }
 
     public void enableFlashlight() {
