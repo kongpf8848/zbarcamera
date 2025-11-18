@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureFailure;
@@ -30,7 +31,7 @@ import java.util.List;
 public final class CameraUtil {
 
     private static final String TAG = "CameraUtil";
-    private final String CAMERA_ID = "0";
+    private final String CAMERA_ID = "" + CameraCharacteristics.LENS_FACING_FRONT;
     private static final int PREVIEW_WIDTH = 1080;
     private static final int PREVIEW_HEIGHT = 1920;
     private CameraManager cameraManager;
